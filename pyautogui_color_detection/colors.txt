@@ -1,0 +1,6 @@
+nothing: (249, 249, 249)
+yellow popup thing: (255, 185, 0) #in my system
+js popup: (255, 255, 255)
+
+# to work around different system colors, press enter to close the popups
+# whenever is different from the expected color (249, 249, 249), then it requires enter to close it
