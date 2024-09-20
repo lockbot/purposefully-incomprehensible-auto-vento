@@ -72,10 +72,15 @@ def main():
     # Define minimal sleep times
     key_press_delay = 0.005  # Time between keyDown and keyUp
     post_key_press_delay = 0.05  # Time after releasing keys before next action
+    #
     type_interval = 0.005  # Interval between keystrokes when typing
     after_type_delay = 0.1  # Delay after typing and pressing enter
+    #
     mouse_move_duration = 0.4  # Duration for mouse movements
     after_click_delay = 0.1  # Delay after clicking
+    #
+    between_button_clicks_delay = 2.5  # Delay between button clicks
+    exam_wait_time = 85  # 1 minute 25 seconds (85 seconds)
 
     # First Cheat Code Call
     # Call the cheat code box (Ctrl+Alt+S+C+G)
@@ -147,7 +152,8 @@ def main():
     # Assuming screen resolution is 1366x768
     button1_x = screen_width // 2 - 225  # Slightly to the left of center (adjust as needed)
     exam_row_y = 220  # Adjusted value based on where the exam row is
-    button1_y = exam_row_y + 355  # Adjusted value based on the last click
+    button_y = exam_row_y + 355  # Adjusted value based on the last click
+    button2_x = button1_x + 200  # Adjusted value based on the last click
 
     # Move to exam_row_y and click
     pyautogui.moveTo(button1_x, exam_row_y, duration=mouse_move_duration)
@@ -155,11 +161,35 @@ def main():
     print(f"Clicked at exam row position ({button1_x}, {exam_row_y})")
     time.sleep(after_click_delay)
 
-    # Move to button1_y and click
-    pyautogui.moveTo(button1_x, button1_y, duration=mouse_move_duration)
-    pyautogui.click()
-    print(f"Clicked at button1 position ({button1_x}, {button1_y})")
-    time.sleep(after_click_delay)
+    # Define your variables
+    button1_x = 500  # Example X-coordinate for button1
+    button2_x = 600  # Example X-coordinate for button2
+    button_y = 400  # Y-coordinate for both buttons
+    mouse_move_duration = 0.1  # Duration for mouse movements
+    after_click_delay = 0.05  # Delay after clicking
+
+    try:
+        while True:
+            # Move to button1 and click
+            pyautogui.moveTo(button1_x, button_y, duration=mouse_move_duration)
+            pyautogui.click()
+            print(f"Clicked at button1 position ({button1_x}, {button_y})")
+            time.sleep(after_click_delay)
+            time.sleep(between_button_clicks_delay)
+
+            # Wait for the activity to finish
+            time.sleep(wait_interval)
+
+            # Move to button2 and click
+            pyautogui.moveTo(button2_x, button_y, duration=mouse_move_duration)
+            pyautogui.click()
+            print(f"Clicked at button2 position ({button2_x}, {button_y})")
+            time.sleep(after_click_delay)
+            time.sleep(between_button_clicks_delay)
+
+    except KeyboardInterrupt:
+        print("Loop interrupted by user.")
+        # Place any cleanup or continuation code here
 
     # Call the CLOSING cheat code box again to end "del breaths" mode
     for key in ['ctrl', 'alt', 's', 'c', 'g']:
