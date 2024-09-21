@@ -92,9 +92,13 @@ def initialize_application(skip_launch=False):
         else:
             raise Exception(f"Executable not found at '{executable_path}'")
 
+        pyautogui.moveTo(700, 325, duration=0.15)
+        pyautogui.click()
+
     # Maximize the window using pygetwindow
     window.maximize()
     print("Maximized the window")
+
 
 def perform_cheat_codes():
     # Define minimal sleep times
@@ -105,6 +109,7 @@ def perform_cheat_codes():
 
     # First Cheat Code Call
     # Call the cheat code box (Ctrl+Alt+S+C+G)
+    print("First Cheat Code Call")
     for key in ['ctrl', 'alt', 's', 'c', 'g']:
         pyautogui.keyDown(key)
     time.sleep(key_press_delay)
@@ -113,11 +118,13 @@ def perform_cheat_codes():
     time.sleep(post_key_press_delay)
 
     # Type "debug" and press Enter
+    print("Typing debug")
     pyautogui.typewrite('debug', interval=type_interval)
     pyautogui.press('enter')
     time.sleep(after_type_delay)
 
     # Call the cheat code box again
+    print("Second Cheat Code Call")
     for key in ['ctrl', 'alt', 's', 'c', 'g']:
         pyautogui.keyDown(key)
     time.sleep(key_press_delay)
@@ -126,11 +133,13 @@ def perform_cheat_codes():
     time.sleep(post_key_press_delay)
 
     # Type "del breaths" and press Enter
+    print("Typing del breaths")
     pyautogui.typewrite('del breaths', interval=type_interval)
     pyautogui.press('enter')
     time.sleep(after_type_delay)
 
     # Press Ctrl+Alt+G
+    print("Call to navigation")
     for key in ['ctrl', 'alt', 'g']:
         pyautogui.keyDown(key)
     time.sleep(key_press_delay)
@@ -139,6 +148,7 @@ def perform_cheat_codes():
     time.sleep(post_key_press_delay)
 
     # Call the CLOSING cheat code box to end "debug" mode
+    print("Third cheat code call")
     for key in ['ctrl', 'alt', 's', 'c', 'g']:
         pyautogui.keyDown(key)
     time.sleep(key_press_delay)
@@ -147,6 +157,7 @@ def perform_cheat_codes():
     time.sleep(post_key_press_delay)
 
     # Press Ctrl+E
+    print("Exam tab")
     for key in ['ctrl', 'e']:
         pyautogui.keyDown(key)
     time.sleep(key_press_delay)
@@ -155,6 +166,7 @@ def perform_cheat_codes():
     time.sleep(post_key_press_delay)
 
     # Press Ctrl+Alt+G to turn off the navigation
+    print("Close navigation")
     for key in ['ctrl', 'alt', 'g']:
         pyautogui.keyDown(key)
     time.sleep(key_press_delay)
@@ -163,6 +175,7 @@ def perform_cheat_codes():
     time.sleep(post_key_press_delay)
 
     # Type "debug" and press Enter
+    print("Typing debug to close")
     pyautogui.typewrite('debug', interval=type_interval)
     pyautogui.press('enter')
     time.sleep(after_type_delay)
@@ -191,9 +204,9 @@ def perform_loop_actions(initial_color, screen_width):
     button2_x = button1_x + 200  # Adjusted value based on the last click
     # Define the timings
     mouse_move_duration = 0.1  # Duration for mouse movements
-    after_click_delay = 0.05   # Delay after clicking
+    after_click_delay = 0.05  # Delay after clicking
     between_button_clicks_delay = 2.5  # Delay between button clicks
-    exam_wait_time = 60  # Total wait time (60 seconds) [I expect it to be increased]
+    exam_wait_time = 15  # Total wait time (15 seconds)
     popup_check_interval = 5  # Check every 5 seconds
 
     try:
@@ -263,6 +276,7 @@ def close_cheat_codes():
     after_type_delay = 0.1
 
     # Call the cheat code box to end "del breaths" mode
+    print("Fourth cheat code call")
     for key in ['ctrl', 'alt', 's', 'c', 'g']:
         pyautogui.keyDown(key)
     time.sleep(key_press_delay)
@@ -271,6 +285,7 @@ def close_cheat_codes():
     time.sleep(post_key_press_delay)
 
     # Type "del breaths" and press Enter
+    print("Typing del breaths to close")
     pyautogui.typewrite('del breaths', interval=type_interval)
     pyautogui.press('enter')
     time.sleep(after_type_delay)
@@ -287,3 +302,4 @@ if __name__ == "__main__":
         MB_SETFOREGROUND = 0x00010000
         uType = MB_ICONHAND | MB_TOPMOST | MB_SETFOREGROUND
         ctypes.windll.user32.MessageBoxW(0, f"Error: {e}", "Script Error", uType)
+
