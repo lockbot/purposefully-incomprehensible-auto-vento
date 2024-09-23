@@ -2,6 +2,8 @@ import os
 import sqlite3
 import ctypes
 from datetime import datetime, timedelta
+import csv
+
 
 def get_db_path():
     app_data = os.getenv('APPDATA')
@@ -12,6 +14,7 @@ def get_db_path():
         raise Exception(f"Database file not found at {db_path}")
     return db_path
 
+
 def get_latest_exam_id(conn):
     cursor = conn.cursor()
     cursor.execute("SELECT id FROM exams ORDER BY id DESC LIMIT 1")
@@ -20,6 +23,7 @@ def get_latest_exam_id(conn):
         return row[0]
     else:
         raise Exception("No exams found in the database.")
+
 
 def get_breaths_for_exam(conn, exam_id):
     cursor = conn.cursor()
@@ -30,6 +34,7 @@ def get_breaths_for_exam(conn, exam_id):
     """, (exam_id,))
     breaths = cursor.fetchall()
     return breaths  # List of tuples (id, date_time_finish)
+
 
 def parse_date_string(date_string):
     # Replace space with 'T' for ISO format
@@ -58,19 +63,29 @@ def parse_date_string(date_string):
     dt = datetime.fromisoformat(new_date_string)
     return dt
 
+
 def update_breaths(conn, breaths):
     cursor = conn.cursor()
-    for breath_id, date_time_finish in breaths:
+    for idx, (breath_id, date_time_finish) in enumerate(breaths):
         if date_time_finish is None:
             raise Exception(f"date_time_finish is NULL for breath id {breath_id}")
+
         try:
             date_time_finish_dt = parse_date_string(date_time_finish)
         except Exception as e:
             raise Exception(f"Invalid date_time_finish format for breath id {breath_id}: {date_time_finish}") from e
+
         breath_confirm_dt = date_time_finish_dt + timedelta(seconds=1)
         breath_confirm_str = breath_confirm_dt.isoformat(sep=' ', timespec='microseconds')
-        alert_start_dt = breath_confirm_dt + timedelta(seconds=1)
-        alert_start_str = alert_start_dt.isoformat(sep=' ', timespec='microseconds')
+
+        # If it's not the last breath, set alert_start as usual
+        if idx < len(breaths) - 1:
+            alert_start_dt = breath_confirm_dt + timedelta(seconds=1)
+            alert_start_str = alert_start_dt.isoformat(sep=' ', timespec='microseconds')
+        else:
+            # Last breath: set alert_start to NULL explicitly
+            alert_start_str = None
+
         cursor.execute("""
             UPDATE breaths
             SET deleted_at = NULL,
@@ -78,7 +93,9 @@ def update_breaths(conn, breaths):
                 alert_start = ?
             WHERE id = ?
         """, (breath_confirm_str, alert_start_str, breath_id))
+
     conn.commit()
+
 
 def update_breath_gas(conn, breaths):
     cursor = conn.cursor()
@@ -94,6 +111,7 @@ def update_breath_gas(conn, breaths):
     cursor.execute(query, breath_ids)
     conn.commit()
 
+
 def get_gas_name(gas_id):
     if gas_id == 1:
         return "H2"
@@ -102,29 +120,33 @@ def get_gas_name(gas_id):
     else:
         return "unknown"
 
-def print_breaths(conn, exam_id, output_file=None):
+
+def export_to_csv(conn, exam_id, output_filename):
     cursor = conn.cursor()
-    cursor.execute("SELECT id FROM breaths WHERE exam_id = ? ORDER BY id", (exam_id,))
-    breaths = cursor.fetchall()
-    for (breath_id,) in breaths:
-        output_line = f"breaths.id {breath_id}"
-        print(output_line)
-        if output_file:
-            output_file.write(output_line + '\n')
-        cursor.execute("SELECT gas, ppm FROM breath_gas WHERE breath_id = ?", (breath_id,))
-        gases = cursor.fetchall()
-        for gas_id, ppm in gases:
+    cursor.execute("""
+        SELECT b.exam_id, b.id as breath_id, bg.id as breath_gas_id, bg.created_at, bg.gas, bg.ppm
+        FROM breaths b
+        JOIN breath_gas bg ON b.id = bg.breath_id
+        WHERE b.exam_id = ?
+        ORDER BY b.id, bg.id
+    """, (exam_id,))
+    rows = cursor.fetchall()
+
+    with open(output_filename, 'w', newline='', encoding='utf-8') as csvfile:
+        csvwriter = csv.writer(csvfile)
+        csvwriter.writerow(['Exam ID', 'Breath ID', 'BreathGas ID', 'Created At', 'Gas', 'PPM'])
+
+        for row in rows:
+            exam_id, breath_id, breath_gas_id, created_at, gas_id, ppm = row
             gas_name = get_gas_name(gas_id)
-            output_line = f"- breath_gas.gas {gas_name} | breath_gas.ppm {ppm}"
-            print(output_line)
-            if output_file:
-                output_file.write(output_line + '\n')
+            csvwriter.writerow([exam_id, breath_id, breath_gas_id, created_at, gas_name, ppm])
+
 
 def main():
     # Define the timestamp at the start of the script
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_filename = f"breaths_rescue_{timestamp}.txt"
-    
+    output_filename = f"breaths_rescue_{timestamp}.csv"
+
     db_path = get_db_path()
     conn = sqlite3.connect(db_path)
     try:
@@ -135,17 +157,18 @@ def main():
             return
         update_breaths(conn, breaths)
         update_breath_gas(conn, breaths)
-        # Open the output file with the timestamped filename
-        with open(output_filename, 'w', encoding='utf-8') as output_file:
-            print_breaths(conn, exam_id, output_file)
+        export_to_csv(conn, exam_id, output_filename)
+        print(f"Data exported successfully to {output_filename}")
     finally:
         conn.close()
+
 
 if __name__ == "__main__":
     try:
         main()
     except Exception as e:
         import traceback
+
         error_message = ''.join(traceback.format_exception(None, e, e.__traceback__))
         print(f"Error: {e}")
         # Bring the message box to the foreground (doesn't work)

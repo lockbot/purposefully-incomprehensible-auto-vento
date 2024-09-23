@@ -36,6 +36,7 @@ py -m pip install --upgrade pip
 
 ```cmd
 py -m pip install pyautogui
+py -m pip install pyserial
 ```
 
 ## Run the Script
@@ -78,25 +79,72 @@ py main.py
   - For breaths associated with that exam where `deleted_at` is not `NULL`:
     - Sets `deleted_at` to `NULL` in both `breaths` and `breath_gas` tables.
     - Updates `breath_confirm` to one second after `date_time_finish`.
-    - Updates `alert_start` to one second after `breath_confirm`.
-- **Prints Breaths and Associated Gases:**
-  - Outputs to the console and writes to a timestamped text file.
+    - Updates `alert_start` to one second after `breath_confirm`, except for the last breath, where `alert_start` remains `NULL`.
+- **Generates a CSV File:**
+  - The script now generates a CSV file instead of a text output.
+  - The CSV file contains the following columns:
+    - `Exam ID`, `Breath ID`, `BreathGas ID`, `Created At`, `Gas`, `PPM`.
+  - The file will be named `breaths_rescue_<timestamp>.csv` and saved in the current directory.
 
 ## Output
 
-The script will generate an output similar to:
+The script will generate a CSV file similar to:
 
 ```
-breaths.id 9
-- breath_gas.gas H2 | breath_gas.ppm 22.5
-- breath_gas.gas CH4 | breath_gas.ppm 22.1
-breaths.id 10
-- breath_gas.gas H2 | breath_gas.ppm 23.0
-- breath_gas.gas CH4 | breath_gas.ppm 21.8
+Exam ID, Breath ID, BreathGas ID, Created At, Gas, PPM
+1, 9, 1, 2023-09-20 10:45:00, H2, 22.5
+1, 9, 2, 2023-09-20 10:45:01, CH4, 22.1
+1, 10, 3, 2023-09-20 10:50:00, H2, 23.0
+1, 10, 4, 2023-09-20 10:50:01, CH4, 21.8
 ...
 ```
 
-An output file with a name like `breaths_rescue_20240919_153045.txt` will be created in the same directory.
+An output file with a name like `breaths_rescue_20240919_153045.csv` will be created in the same directory.
+
+---
+
+# Show All Breaths Script
+
+Navigate to the `python_show_all_breaths` directory to run the script that generates a CSV file with all breaths and associated gas readings from the SQLite database where `deleted_at` is `NULL`.
+
+## Navigate to the `python_show_all_breaths` Directory
+
+```cmd
+cd python_show_all_breaths
+```
+
+## Run the Script
+
+```cmd
+py main.py
+```
+
+## What the Script Does
+
+- **Connects to the SQLite Database:**
+  - Located at `%AppData%\HermetoPascoal\db\vento-1.3.2.db`.
+- **Shows All Breaths:**
+  - Fetches all breaths and their associated gas readings where `deleted_at` is `NULL`.
+  - Generates a CSV file containing the following columns:
+    - `Exam ID`, `Breath ID`, `BreathGas ID`, `Created At`, `Gas`, `PPM`.
+  - The CSV file will be named `all_breaths_<timestamp>.csv` and saved in the current directory.
+
+## Output
+
+The script will generate a CSV file similar to:
+
+```
+Exam ID, Breath ID, BreathGas ID, Created At, Gas, PPM
+1, 9, 1, 2023-09-20 10:45:00, H2, 22.5
+1, 9, 2, 2023-09-20 10:45:01, CH4, 22.1
+1, 10, 3, 2023-09-20 10:50:00, H2, 23.0
+1, 10, 4, 2023-09-20 10:50:01, CH4, 21.8
+...
+```
+
+An output file with a name like `all_breaths_20240923_153045.csv` will be created in the same directory.
+
+---
 
 ## Notes
 
@@ -133,6 +181,6 @@ An output file with a name like `breaths_rescue_20240919_153045.txt` will be cre
 
 ---
 
-By following the steps above, you should be able to successfully automate the vento software procedures, perform tests, and undelete breaths and their associated gas readings in your SQLite database.
+By following the steps above, you should be able to successfully automate the vento software procedures, perform tests, undelete breaths and their associated gas readings, and generate a complete list of breaths and gas readings where `deleted_at` is `NULL` in your SQLite database.
 
 If you have any questions or need further assistance, feel free to reach out!
