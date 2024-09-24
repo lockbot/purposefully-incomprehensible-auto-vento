@@ -142,7 +142,7 @@ def export_to_csv(conn, exam_id, output_filename):
             csvwriter.writerow([exam_id, breath_id, breath_gas_id, created_at, gas_name, ppm])
 
 
-def main():
+def rescue_breaths():
     # Define the timestamp at the start of the script
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_filename = f"breaths_rescue_{timestamp}.csv"
@@ -164,20 +164,4 @@ def main():
         print(f"Data exported successfully to {output_filename}")
     finally:
         conn.close()
-
-
-if __name__ == "__main__":
-    try:
-        main()
-    except Exception as e:
-        import traceback
-
-        error_message = ''.join(traceback.format_exception(None, e, e.__traceback__))
-        print(f"Error: {e}")
-        # Bring the message box to the foreground (doesn't work)
-        MB_ICONHAND = 0x00000010
-        MB_TOPMOST = 0x00040000
-        MB_SETFOREGROUND = 0x00010000
-        uType = MB_ICONHAND | MB_TOPMOST | MB_SETFOREGROUND
-        ctypes.windll.user32.MessageBoxW(0, f"Error: {e}", "Script Error", uType)
 

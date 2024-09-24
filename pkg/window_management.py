@@ -28,6 +28,50 @@ def initialize_application(skip_launch=False):
         window = windows[0]
         window.activate()
         print(f"Activated window titled '{window_title}'")
+
+        if not skip_launch:
+            # Close the application and open it again
+            close_application()
+
+            # Open the application
+            executable_name = 'Hermeto Pascoal.exe'
+            executable_path = shutil.which(executable_name)
+
+            if not executable_path:
+                program_files = os.environ.get('ProgramFiles')
+                if program_files:
+                    executable_path = os.path.join(program_files, 'Hermeto', 'Pascoal', executable_name)
+                else:
+                    raise Exception("Cannot find %ProgramFiles% environment variable")
+
+            if os.path.exists(executable_path):
+                subprocess.Popen([executable_path])
+                print(f"Launched '{executable_path}'")
+
+                # Wait for the application window to appear (with a timeout)
+                max_wait_time = 5  # Maximum wait time in seconds
+                wait_interval = 0.5  # Interval between checks
+                elapsed_time = 0
+
+                while elapsed_time < max_wait_time:
+                    windows = pygetwindow.getWindowsWithTitle(window_title)
+                    if windows:
+                        window = windows[0]
+                        window.activate()
+                        print(f"Activated window titled '{window_title}'")
+                        break
+                    else:
+                        time.sleep(wait_interval)
+                        elapsed_time += wait_interval
+                else:
+                    raise Exception(f"Still no window found with title '{window_title}' after launching the application")
+            else:
+                raise Exception(f"Executable not found at '{executable_path}'")
+
+            # After launching the app, simulate a click at position (700, 325)
+            pyautogui.moveTo(700, 325, duration=0.15)
+            pyautogui.click()
+
     else:
         print(f"No window found with title '{window_title}'")
 

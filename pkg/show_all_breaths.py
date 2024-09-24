@@ -53,7 +53,7 @@ def export_to_csv(conn, output_filename):
             csvwriter.writerow([exam_id, breath_id, breath_gas_id, created_at, gas_name, ppm])
 
 
-def main():
+def show_all_breaths():
     # Define the timestamp at the start of the script
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_filename = f"all_breaths_{timestamp}.csv"
@@ -69,12 +69,3 @@ def main():
     finally:
         conn.close()
 
-
-if __name__ == "__main__":
-    try:
-        main()
-    except Exception as e:
-        import traceback
-
-        error_message = ''.join(traceback.format_exception(None, e, e.__traceback__))
-        print(f"Error: {e}")
