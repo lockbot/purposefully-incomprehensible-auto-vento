@@ -8,7 +8,7 @@ Python script to automate vento software procedures and perform tests via a grap
 
 ### _(setup)_ Check Python Version
 
-Ensure you're using Python **3.11.8** or a compatible version:
+Ensure you're using Python **3.12.6** or a compatible version:
 
 ```cmd
 py --version
@@ -40,6 +40,13 @@ py -m pip install --upgrade pip
 py -m pip install pyautogui
 py -m pip install pyserial
 py -m pip install pyinstaller
+py -m pip install openpyxl
+```
+
+OR try with the `requirements.txt` file:
+
+```cmd
+py -m pip install -r requirements.txt
 ```
 
 ### Building the Executable

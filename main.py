@@ -1,30 +1,33 @@
 import os
-# import sys
 import time
 import ctypes
 import pyautogui
-# import subprocess
 from threading import Thread, Event
-from tkinter import Tk, Button, Label
+from tkinter import Tk, Button, Label, Entry
 
 from pkg.window_management import initialize_application, close_application
 from pkg.cheat_codes import perform_cheat_codes, close_cheat_codes
 from pkg.device_handling_and_click_loop import check_device_connection, handle_connection_issue, perform_loop_actions
 from pkg.click_handling import click_exam_row
-from pkg.show_all_breaths import show_all_breaths
-from pkg.rescue_breaths import rescue_breaths
+from pkg.rescue_and_export_breaths import rescue_and_export_breaths
+from pkg.db_handling import cleanup_excess_breaths, copy_last_exam
+from pkg.config_offset import config
 
 
 # Event object to control the loop safely between threads
 running_event = Event()
 thread: None | Thread = None  # Thread object to run the automation
 
+# Declare the input fields as global variables
+x_offset_entry = None
+y_offset_entry = None
+
 
 def start_automation():
     global running_event, thread
     running_event.set()  # Signal that the automation is running
     update_button_states()  # Disable relevant buttons
-    thread = Thread(target=main)  # Run the main function in a separate thread
+    thread = Thread(target=start_automation_main_call)  # Run the start_automation_main_call function in a separate thread
     thread.start()
 
 
@@ -32,7 +35,7 @@ def stop_automation():
     global running_event, thread
     running_event.clear()  # Signal that the automation should stop
     time.sleep(3)
-    # Force close tha "main" thread if it's still running
+    # Force close the "main" thread if it's still running
     if thread is not None and thread.is_alive():
         thread.join(timeout=0)
         thread = None
@@ -44,23 +47,11 @@ def stop_automation():
     # Force quit the entire process
     os._exit(0)
 
-    # # Force quit the entire process
-    # sys.exit(0)
 
-
-def run_rescue_breaths():
+def run_rescue_and_export_breaths():
     disable_all_buttons()  # Disable all buttons while running
-    print("Running Rescue Breaths script...")
-    # subprocess.run(['py', 'python_rescue_breaths/main.py'])
-    rescue_breaths()
-    update_button_states()  # Re-enable buttons when done
-
-
-def run_show_all_breaths():
-    disable_all_buttons()  # Disable all buttons while running
-    print("Running Show All Breaths script...")
-    # subprocess.run(['py', 'python_show_all_breaths/main.py'])
-    show_all_breaths()
+    print("Running Rescue and Export Breaths script...")
+    rescue_and_export_breaths()
     update_button_states()  # Re-enable buttons when done
 
 
@@ -68,8 +59,7 @@ def disable_all_buttons():
     """Disables all buttons on the UI."""
     start_button.config(state='disabled')
     stop_button.config(state='disabled')
-    rescue_breaths_button.config(state='disabled')
-    show_all_breaths_button.config(state='disabled')
+    rescue_and_export_button.config(state='disabled')
 
 
 def update_button_states():
@@ -79,14 +69,12 @@ def update_button_states():
         # Disable everything but the stop button while automation is running
         start_button.config(state='disabled')
         stop_button.config(state='normal')
-        rescue_breaths_button.config(state='disabled')
-        show_all_breaths_button.config(state='disabled')
+        rescue_and_export_button.config(state='disabled')
     else:
         # Enable everything except the stop button when automation is not running
         start_button.config(state='normal')
         stop_button.config(state='disabled')
-        rescue_breaths_button.config(state='normal')
-        show_all_breaths_button.config(state='normal')
+        rescue_and_export_button.config(state='normal')
 
 
 def on_closing():
@@ -95,10 +83,25 @@ def on_closing():
     root.quit()  # Close the Tkinter UI
 
 
-def main():
+def update_offsets():
+    """Updates the x_offset and y_offset based on the input fields."""
+    global x_offset_entry, y_offset_entry
+    try:
+        x_offset = int(x_offset_entry.get())  # Retrieve x_offset from the input field
+        y_offset = int(y_offset_entry.get())  # Retrieve y_offset from the input field
+        config.set_offsets(x_offset, y_offset)  # Update offsets in the config file
+        print(f"Offsets updated: x_offset={x_offset}, y_offset={y_offset}")
+    except ValueError:
+        print("Please enter valid integer values for offsets.")
+
+
+def start_automation_main_call():
     global running_event
     # Enable PyAutoGUI failsafe (moving the mouse to the corner stops execution)
     pyautogui.FAILSAFE = True
+
+    # Copy the last exam in the database
+    copy_last_exam()
 
     # Initialize the application (or raise an error if it can't be opened)
     initialize_application()
@@ -121,6 +124,7 @@ def main():
 
         # Check for the expected resolution
         if screen_width != 1366 or screen_height != 768:
+            ctypes.windll.user32.MessageBoxW(0, "Screen resolution is not 1366x768.", "Error", 0)
             raise Exception(f"Screen resolution is {screen_width}x{screen_height}, expected 1366x768.")
 
         # Click on the exam row
@@ -149,9 +153,14 @@ def main():
 # Exception handling for errors that occur during execution
 if __name__ == "__main__":
     try:
+        # First, call cleanup_excess_breaths at startup
+        cleanup_excess_breaths()
+
         # Tkinter UI setup
         root = Tk()
         root.title("Automation Control")
+        # Set the background color
+        root.configure(bg='#F0F8FF')
 
         # Get the screen width and height
         screen_width = root.winfo_screenwidth()
@@ -159,7 +168,7 @@ if __name__ == "__main__":
 
         # Window size
         window_width = 300
-        window_height = 250
+        window_height = 350  # Adjusted to accommodate new input fields
 
         # Calculate x and y positions to place the window at the bottom left
         x_position = 0
@@ -170,23 +179,41 @@ if __name__ == "__main__":
 
         # Keep the window always on top without taking focus
         root.attributes('-topmost', True)
-        root.attributes('-alpha', 0.8)  # Optional transparency
+        root.attributes('-alpha', 0.9)  # Optional transparency
 
         # Labels and Buttons
-        label = Label(root, text="Automation Control Panel")
+        label = Label(root, text="Automation Control Panel", bg='#F0F8FF')
         label.pack(pady=10)
 
-        start_button = Button(root, text="Start PyAutoPascoal", command=start_automation)
+        start_button = Button(root, text="Start PyAutoPascoal", command=start_automation,
+                              bg='#208FC8', activebackground='#F0F8FF')
         start_button.pack(pady=5)
 
-        stop_button = Button(root, text="Stop PyAutoPascoal", command=stop_automation)
+        stop_button = Button(root, text="Stop PyAutoPascoal", command=stop_automation,
+                             bg='#208FC8', activebackground='#F0F8FF')
         stop_button.pack(pady=5)
 
-        rescue_breaths_button = Button(root, text="Run Rescue Breaths Script", command=run_rescue_breaths)
-        rescue_breaths_button.pack(pady=5)
+        rescue_and_export_button = Button(root, text="Rescue and Export Breaths", command=run_rescue_and_export_breaths,
+                                          bg='#208FC8', activebackground='#F0F8FF')
+        rescue_and_export_button.pack(pady=5)
 
-        show_all_breaths_button = Button(root, text="Run Show All Breaths Script", command=run_show_all_breaths)
-        show_all_breaths_button.pack(pady=5)
+        # Entry fields for x_offset and y_offset (declared as global earlier)
+        x_offset_label = Label(root, text="X Offset:", bg='#F0F8FF')
+        x_offset_label.pack(pady=5)
+        x_offset_entry = Entry(root)
+        x_offset_entry.pack(pady=5)
+        x_offset_entry.insert(0, str(config.config.get('x_offset', 0)))  # Pre-populate with current value
+
+        y_offset_label = Label(root, text="Y Offset:", bg='#F0F8FF')
+        y_offset_label.pack(pady=5)
+        y_offset_entry = Entry(root)
+        y_offset_entry.pack(pady=5)
+        y_offset_entry.insert(0, str(config.config.get('y_offset', 0)))  # Pre-populate with current value
+
+        # Button to update the offsets
+        update_button = Button(root, text="Update Offsets", command=update_offsets,
+                               bg='#208FC8', activebackground='#F0F8FF')
+        update_button.pack(pady=10)
 
         # Bind the closing action to stop automation safely
         root.protocol("WM_DELETE_WINDOW", on_closing)
@@ -200,7 +227,7 @@ if __name__ == "__main__":
     except Exception as e:
         # Output error and display message box in case of failure
         print(f"Error: {e}")
-        # Bring the message box to the foreground (though this may not always work)
+        # Bring the message box to the foreground
         MB_ICONHAND = 0x00000010
         MB_TOPMOST = 0x00040000
         MB_SETFOREGROUND = 0x00010000

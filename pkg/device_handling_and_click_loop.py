@@ -1,3 +1,4 @@
+import ctypes
 import time
 from threading import Event
 
@@ -8,11 +9,13 @@ from pkg.click_handling import click_exam_row
 from pkg.serial_nuke import reset_all_serial_devices
 from pkg.window_management import close_application, initialize_application
 from pkg.popup_handling import check_for_popups, handle_popups
+from pkg.config_offset import config
 
 def perform_loop_actions(initial_color_at_popup_position, screen_width, running_event: Event):
     """Perform the loop actions while detecting popups and connection issues."""
-    button1_x = screen_width // 2 - 225  # X position of first button
-    button_y = 222 + 355  # Y position of the first button
+    x_offset, y_offset = config.get_offsets()
+    button1_x = screen_width // 2 - 225 + x_offset  # X position of first button
+    button_y = 222 + 355 + y_offset  # Y position of the first button
     button2_x = button1_x + 200  # X position of second button
     mouse_move_duration = 0.1  # Mouse movement duration
     after_click_delay = 0.05  # Delay after clicks
@@ -162,6 +165,7 @@ def handle_connection_issue(running_event: Event):
 
         # Check for the expected resolution
         if screen_width != 1366 or screen_height != 768:
+            ctypes.windll.user32.MessageBoxW(0, "Screen resolution is not 1366x768.", "Error", 0)
             raise Exception(f"Screen resolution is {screen_width}x{screen_height}, expected 1366x768.")
 
         # Click on the exam row
